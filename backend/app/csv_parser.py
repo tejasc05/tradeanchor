@@ -9,6 +9,7 @@ def parse_trades_csv(file_path: str) -> list[Trade]:
 
         for row in reader:
             print(row)
+
             
 
     return trades
