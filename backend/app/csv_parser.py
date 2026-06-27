@@ -8,8 +8,8 @@ def parse_trades_csv(file_path: str) -> list[Trade]:
         reader = csv.DictReader(csv_file)
 
         for row in reader:
-            print(row)
+            trade = Trade(**row)
+            trades.append(trade)
 
-            
 
     return trades
