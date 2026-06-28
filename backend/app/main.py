@@ -14,6 +14,7 @@ def health():
 @app.post("/evaluate")
 def evaluate(req: EvaluationRequest):
     evaluations = evaluate_trades(req.trades, req.strategy)
+    
     summary = calculate_statistics(evaluations)
 
     return {
