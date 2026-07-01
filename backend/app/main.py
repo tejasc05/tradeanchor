@@ -1,4 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
+from app.csv_parser import parse_trades_csv
+import tempfile
+import os
 from app.models import EvaluationRequest
 from app.evaluator import evaluate_trades
 from app.statistics import calculate_statistics
@@ -15,31 +18,31 @@ def health():
 def evaluate(req: EvaluationRequest):
     evaluations = evaluate_trades(req.trades, req.strategy)
     
-    total_trades = len(evaluations)
-    followed_count = sum(1 for evaluation in evaluations if evaluation.followed_plan)
-
-    if total_trades == 0:
-        anchor_score = 0
-    else:
-        anchor_score=round((followed_count/total_trades)*100, 2)
-
-    in_strategy_pnl = sum(
-        evaluation.trade.realized_pnl
-        for evaluation in evaluations
-        if evaluation.followed_plan
-    )
-
-    out_of_strategy_pnl = sum(
-        evaluation.trade.realized_pnl
-        for evaluation in evaluations
-        if not evaluation.followed_plan
-    )
+    summary = calculate_statistics(evaluations)
 
     return {
-       **summary
-        "evaluations": evaluations,
+        **summary,
+        "evaluations": evaluations
     }
 
+@app.post("/upload-csv")
+async def upload_csv(file: UploadFile = File(...)):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_file:
+        contents = await file.read()
+        temp_file.write(contents)
+        temp_path = temp_file.name
 
+    try:
+        trades = parse_trades_csv(temp_path)
+
+        return {
+            "message": "CSV parsed successfully.",
+            "num_trades": len(trades),
+            "trades": trades,
+        }
+    
+
+    finally:
+        os.remove(temp_path)
 
 
